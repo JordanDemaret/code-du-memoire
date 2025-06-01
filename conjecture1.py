@@ -14,7 +14,6 @@ import matplotlib.pyplot as plt
 # Import des fonctions nécessaires crées dans le cardre de ce memoire
 from fonction import *
 
-
 # Liste des paramètres Globales deffinit par Wagner
 N = 20  
 DECISIONS = int(N*(N-1)/2)  

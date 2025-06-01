@@ -28,18 +28,33 @@ def construction_graphe(state,N):
             count += 1
     return G, Gdeg
 
-#TODO
 def RandicIndex(G, Gdeg):
-	result = 0
-	for u,v in G.edges():
-		result += 1/(math.sqrt(Gdeg[u]*Gdeg[v]))
-	return result
-#TODO
+    """
+    Fonction pour calculer l'indice de Randic d'un graphe.
+    Args:
+        G (networkx.Graph): Le graphe pour lequel l'indice de Randic doit être calculé.
+        Gdeg (numpy.ndarray): Un tableau contenant le degré de chaque sommet du graphe.
+    Returns:
+        result (float): L'indice de Randic du graphe.
+    """
+    result = 0
+    for u,v in G.edges():
+        result += 1/(math.sqrt(Gdeg[u]*Gdeg[v]))
+    return result
+
 def AGindex(G,Gdeg):
-	result = 0
-	for u,v in G.edges():
-		result += (Gdeg[u]+Gdeg[v])/(2*math.sqrt(Gdeg[u]*Gdeg[v]))
-	return result
+    """
+    Fonction pour calculer l'indice AG d'un graphe.
+    Args:
+        G (networkx.Graph): Le graphe pour lequel l'indice AG doit être calculé.
+        Gdeg (numpy.ndarray): Un tableau contenant le degré de chaque sommet du graphe.
+    Returns:    
+        result (float): L'indice AG du graphe.
+    """
+    result = 0
+    for u,v in G.edges():
+        result += (Gdeg[u]+Gdeg[v])/(2*math.sqrt(Gdeg[u]*Gdeg[v]))
+    return result
 
 def colorationNonEquival(G,n):
     if G.number_of_edges() == int(n*(n-1)/2):
