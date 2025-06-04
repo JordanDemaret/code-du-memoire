@@ -1,25 +1,23 @@
 import networkx as nx 
 import random
 import numpy as np
-from keras.utils import to_categorical
 from keras.models import Sequential
 from keras.layers import Dense
-from keras.optimizers import SGD, Adam
-from keras.models import load_model
-from statistics import mean
+from keras.optimizers import SGD
 import pickle
 import time
-import math
 import matplotlib.pyplot as plt
-from numba import njit
-import copy
+
+from fonction import *  
+import os
 
 # Import des fonctions nécessaires crées dans le cardre de ce memoire
 from fonction import *
 
 # Liste des paramètres Globales deffinit par Wagner
-N = 20   
-DECISIONS = int(N*(N-1)/2)  
+N = 7
+DECISIONS = int(N*(N-1)/2) 
+M= 6
 
 LEARNING_RATE = 0.0001 
 
@@ -28,6 +26,7 @@ percentile = 93
 super_percentile = 94 
 
 FIRST_LAYER_NEURONS = 128 
+SECOND_LAYER_NEURONS = 64
 THIRD_LAYER_NEURONS = 4
 
 n_actions = 2 
@@ -50,86 +49,15 @@ model.compile(loss="binary_crossentropy", optimizer=SGD(learning_rate = LEARNING
 
 print(model.summary())
 
-
-#TODO
-def G_star(n, m):
-    k_m=0
-    while (k_m * (k_m - 1)) // 2 <= m:
-        k_m += 1
-    k_m -= 1
-    
-    r_m = m - (k_m * (k_m - 1)) // 2
-    print(r_m)
-
-    # Créer un graphe vide
-    G = nx.Graph()
-
-    # Ajouter les sommets de la clique
-    clique_nodes = list(range(k_m))
-    G.add_nodes_from(clique_nodes)
-
-    # Ajouter les arêtes de la clique
-    for i in range(k_m):
-        for j in range(i + 1, k_m):
-            G.add_edge(i, j)
-
-    # Ajouter les sommets isolés
-    isolated_nodes = list(range(k_m, n))
-    G.add_nodes_from(isolated_nodes)
-
-    # Connecter un sommet isolé à r_m sommets de la clique
-    if n - k_m > 0:
-        isolated_node = k_m
-        for i in range(r_m):
-            G.add_edge(isolated_node, i)
-
-    return G
-#TODO
-def colorationNonEquival(G,n):
-    if G.number_of_edges() == int(n*(n-1)/2):
-        return 1
-    else:
-        iChosen = 0
-        jChosen = 0
-        for i in G.nodes():
-            for j in G.nodes():
-                if i < j and not G.has_edge(i,j):
-                    iChosen = i
-                    jChosen = j
-                    break
-        G1 = copy.deepcopy(G)
-        G2 = copy.deepcopy(G)
-
-        G1.add_edge(iChosen,jChosen)
-
-        G2 = nx.contracted_nodes(G2, jChosen, iChosen, self_loops=False)
-
-        return colorationNonEquival(G1,n) + colorationNonEquival(G2,n-1)
-#TODO
 GraphRef = G_star(N, M)
 colorationOfGraphRef = colorationNonEquival(GraphRef, N)
 
 found = False
 def calc_score(state):
-	"""
-	Reward function for your problem.
-
-    Input: a 0-1 vector of length DECISIONS. It represents the graph (or other object) you have created.
-
-    Output: the reward/score for your construction. See files in the *demos* folder for examples.	
-	"""
-	G= nx.Graph()
+	#TODO
 	global found
-	G.add_nodes_from(list(range(N)))
-	Gdeg = np.zeros(N,dtype=np.int16) #degree sequence
-	count = 0
-	for i in range(N):
-		for j in range(i+1,N):
-			if state[count] == 1:	
-				G.add_edge(i,j)
-				Gdeg[i] += 1
-				Gdeg[j] += 1
-			count += 1
+	G,_ = construction_graphe(state,N)
+
 	if G.number_of_edges() !=M:
 		return -INF
 	ColG = colorationNonEquival(G,N)
@@ -162,13 +90,11 @@ def play_game(n_sessions, actions,state_next,states,prob, step, total_score):
 			state_next[i][step-1] = action
 		state_next[i][DECISIONS + step-1] = 0
 		if (step < DECISIONS):
-			state_next[i][DECISIONS + step] = 1			
-		#calculate final score
+			state_next[i][DECISIONS + step] = 1		
 		terminal = step == DECISIONS
 		if terminal:
 			total_score[i] = calc_score(state_next[i])
-	
-		# record sessions 
+
 		if not terminal:
 			states[i,:,step] = state_next[i]
 		
@@ -194,7 +120,7 @@ def generate_session(agent, n_sessions, verbose = 1):
 		prob = agent.predict(states[:,:,step-1], batch_size = n_sessions) 
 		pred_time += time.time()-tic
 		tic = time.time()
-		actions, state_next,states, total_score, terminal = jitted_play_game(n_sessions, actions,state_next,states,prob, step, total_score)
+		actions, state_next,states, total_score, terminal = play_game(n_sessions, actions,state_next,states,prob, step, total_score)
 		play_time += time.time()-tic
 		
 		if terminal:
@@ -253,10 +179,28 @@ sessgen_time = 0
 fit_time = 0
 score_time = 0
 
-
+#TODO:
+listGraph = []
+inter=[]
+listGraphScore = []
 
 myRand = random.randint(0,1000) #used in the filename
 if __name__ == "__main__":
+	#TODO
+	if not os.path.exists(str(myRand)):
+		os.makedirs(str(myRand))   
+	# TODO
+	nx.draw_kamada_kawai(GraphRef)
+	plt.savefig(str(myRand)+'/graph_ref_'+str(myRand)+'.png')
+	plt.close()  # Fermer la figure précédente pour éviter les superpositions
+	#TODO: 
+	# Afficher et sauvegarder le complémentaire de GraphRef
+	GraphRef_complement = nx.complement(GraphRef)
+	nx.draw_kamada_kawai(GraphRef_complement)
+	plt.savefig(str(myRand)+'/graph_ref_complement_'+str(myRand)+'.png')
+	plt.close()
+
+
 	for i in range(1000000): #1000000 generations should be plenty
 		#generate new sessions
 		#performance can be improved with joblib
@@ -314,32 +258,80 @@ if __name__ == "__main__":
 		
 		
 		if (i%20 == 1): #Write all important info to files every 20 iterations
-			with open('best_species_pickle_'+str(myRand)+'.txt', 'wb') as fp:
+			with open(str(myRand)+'/best_species_pickle_'+str(myRand)+'.txt', 'wb') as fp:
 				pickle.dump(super_actions, fp)
-			with open('best_species_txt_'+str(myRand)+'.txt', 'w') as f:
+			with open(str(myRand)+'/best_species_txt_'+str(myRand)+'.txt', 'w') as f:
 				for item in super_actions:
 					f.write(str(item))
 					f.write("\n")
-			with open('best_species_rewards_'+str(myRand)+'.txt', 'w') as f:
+			with open(str(myRand)+'/best_species_rewards_'+str(myRand)+'.txt', 'w') as f:
 				for item in super_rewards:
 					f.write(str(item))
 					f.write("\n")
-			with open('best_100_rewards_'+str(myRand)+'.txt', 'a') as f:
+			with open(str(myRand)+'/best_100_rewards_'+str(myRand)+'.txt', 'a') as f:
 				f.write(str(mean_all_reward)+"\n")
-			with open('best_elite_rewards_'+str(myRand)+'.txt', 'a') as f:
+			with open(str(myRand)+'/best_elite_rewards_'+str(myRand)+'.txt', 'a') as f:
 				f.write(str(mean_best_reward)+"\n")
 			#TODO: save the model weights
-			with open('layer_weights_'+str(myRand)+'.txt', 'w') as f:
+			with open(str(myRand)+'/layer_weights_'+str(myRand)+'.txt', 'w') as f:
 				for layer in model.layers:
 					weights, biases = layer.get_weights()
 					f.write(f"Layer: {layer.name}\n")
 					f.write(f"Weights: {weights}\n")
 					f.write(f"Biases: {biases}\n")
-
 		if (i%200==2): # To create a timeline, like in Figure 3
-			with open('best_species_timeline_txt_'+str(myRand)+'.txt', 'a') as f:
+			with open(str(myRand)+'/best_species_timeline_txt_'+str(myRand)+'.txt', 'a') as f:
 				f.write(str(super_actions[0]))
 				f.write("\n")
+			#TODO: 
+			inter.append(i)
+			G, _ = construction_graphe(super_actions[0], N)
+			listGraph.append(G)
+			listGraphScore.append(super_rewards[0])
+			
+			# Affichage des graphes
+			num_graphs = len(listGraph)
+			cols = 5  # Nombre de colonnes dans la grille
+			rows = math.ceil(num_graphs / cols)  # Calcul du nombre de lignes nécessaires
+
+			fig, axes = plt.subplots(rows, cols, figsize=(min(20, 5 * cols), min(20, 5 * rows)))
+			axes = axes.flatten()  # Aplatir pour un accès facile
+
+			for i, G in enumerate(listGraph):
+				pos = nx.circular_layout(G)
+				#pos = nx.shell_layout(G)
+		   
+				# Identifier les nœuds isolés
+		   
+				# Dessiner le graphe
+				nx.draw(G, pos, ax=axes[i], with_labels=True, node_color='lightblue', edge_color='gray')
+				axes[i].set_title(f"Itération n° {inter[i]} (Score: {listGraphScore[i]:.2f})")  # Titre pour chaque sous-graphe
+			   
+			   
+				# Ajouter une grille manuellement
+				axes[i].set_xticks([])  # Supprimer les ticks x
+				axes[i].set_yticks([])  # Supprimer les ticks y
+				axes[i].grid(visible=True, color='gray', linestyle='--', linewidth=0.5)  # Ajouter une grille
+		
+			plt.savefig(f"{myRand}/graphe_{myRand}.png")
+			plt.close(fig)  # Fermer la figure après l'enregistrement pour éviter d'afficher les graphes à chaque itération
+
+			fig, axes = plt.subplots(rows, cols, figsize=(min(20, 5 * cols), min(20, 5 * rows)))
+			axes = axes.flatten()  # Aplatir pour un accès facile
+	
+			for i, G in enumerate(listGraph):
+				pos = nx.circular_layout(G)
+				# Dessiner le graphe courant
+				G_complement = nx.complement(G)
+				nx.draw(G_complement, pos, ax=axes[i], with_labels=True, node_color='lightblue', edge_color='gray')
+				axes[i].set_title(f"Itération n° {inter[i]} (Score: {listGraphScore[i]:.2f})")
+				axes[i].set_xticks([])
+				axes[i].set_yticks([])
+				axes[i].grid(visible=True, color='gray', linestyle='--', linewidth=0.5)
+			plt.savefig(f"{myRand}/graphe_complement_{myRand}.png")
+			plt.close(fig)
+
+
 	#TODO TOUT LE RESTE DU CODE
 		print(super_actions[0])
 

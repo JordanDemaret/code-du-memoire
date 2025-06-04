@@ -48,6 +48,7 @@ print(model.summary())
 
 
 def calc_score(state):
+	global found
 	#TODO
 	G, Gdeg = construction_graphe(state,N)
 	randicScore = RandicIndex(G,Gdeg)

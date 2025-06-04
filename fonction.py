@@ -2,6 +2,14 @@ import numpy as np
 import networkx as nx
 import math
 import copy
+import pynauty.src.pynauty as pynauty
+import json
+
+
+dico={}           
+# Charger les données
+with open("save.json", "r") as f:
+    dico = json.load(f)
 
 def construction_graphe(state,N):
     """
@@ -61,35 +69,90 @@ def colorationNonEquival(G,n):
         return 1
     else:
         
-        """G=graphe_canonique(G)
+        G=graphe_canonique(G)
         signiature = nx.to_graph6_bytes(G).decode()[10:]
         signiature = signiature[ :len(signiature)-1]
         if signiature in dico:
             return dico[signiature]
-        else:"""
-        for node, degree in G.degree():
-            if degree == n - 1: # Vérifie si le degré du sommet est égal à n-1
-                G1 = copy.deepcopy(G)
-                G1.remove_node(node)
-                mapping = {n-1: node}
-                G1= nx.relabel_nodes(G1, mapping)
-                return colorationNonEquival(G1, n - 1)
-        degres = dict(G.degree()) # Obtenir les degrés des sommets
-        sommets_tries = sorted(degres.items(), key=lambda x: x[1], reverse=True) # Trier par degré décroissant
-        iChosen = sommets_tries[0][0]
-        jChosen = sommets_tries[1][0]
-        for j in sommets_tries[1:]:
-            node = j[0]
-            if not G.has_edge(iChosen,node):
-                jChosen = node
-                break
-        G1 = copy.deepcopy(G)
-        G2 = copy.deepcopy(G)
+        else:
+            for node, degree in G.degree():
+                if degree == n - 1: # Vérifie si le degré du sommet est égal à n-1
+                    G1 = copy.deepcopy(G)
+                    G1.remove_node(node)
+                    mapping = {n-1: node}
+                    G1= nx.relabel_nodes(G1, mapping)
+                    return colorationNonEquival(G1, n - 1)
+            degres = dict(G.degree()) # Obtenir les degrés des sommets
+            sommets_tries = sorted(degres.items(), key=lambda x: x[1], reverse=True) # Trier par degré décroissant
+            iChosen = sommets_tries[0][0]
+            jChosen = sommets_tries[1][0]
+            for j in sommets_tries[1:]:
+                node = j[0]
+                if not G.has_edge(iChosen,node):
+                    jChosen = node
+                    break
+            G1 = copy.deepcopy(G)
+            G2 = copy.deepcopy(G)
 
-        G1.add_edge(iChosen,jChosen)
-        # Fusionner les sommets iChosen et jChosen dans G2
-        G2 = nx.contracted_nodes(G2, iChosen, jChosen, self_loops=False)
-        if n-1 in G2.nodes() and jChosen != n-1:
-            mapping = {n-1: jChosen}
-            G2 = nx.relabel_nodes(G2, mapping)
-        return colorationNonEquival(G1,n) + colorationNonEquival(G2,n-1)
+            G1.add_edge(iChosen,jChosen)
+            # Fusionner les sommets iChosen et jChosen dans G2
+            G2 = nx.contracted_nodes(G2, iChosen, jChosen, self_loops=False)
+            if n-1 in G2.nodes() and jChosen != n-1:
+                mapping = {n-1: jChosen}
+                G2 = nx.relabel_nodes(G2, mapping)
+            return colorationNonEquival(G1,n) + colorationNonEquival(G2,n-1)
+
+def G_star(n, m):
+    k_m=0
+    while (k_m * (k_m - 1)) // 2 <= m:
+        k_m += 1
+    k_m -= 1
+    
+    r_m = m - (k_m * (k_m - 1)) // 2
+    print(r_m)
+
+    # Créer un graphe vide
+    G = nx.Graph()
+
+    # Ajouter les sommets de la clique
+    clique_nodes = list(range(k_m))
+    G.add_nodes_from(clique_nodes)
+
+    # Ajouter les arêtes de la clique
+    for i in range(k_m):
+        for j in range(i + 1, k_m):
+            G.add_edge(i, j)
+
+    # Ajouter les sommets isolés
+    isolated_nodes = list(range(k_m, n))
+    G.add_nodes_from(isolated_nodes)
+
+    # Connecter un sommet isolé à r_m sommets de la clique
+    if n - k_m > 0:
+        isolated_node = k_m
+        for i in range(r_m):
+            G.add_edge(isolated_node, i)
+
+    return G
+	
+def new_G(listeArc, n):
+    G = nx.Graph()
+    G.add_nodes_from(list(range(n)))
+    G.add_edges_from(listeArc)
+    return G
+
+def graphe_canonique(G):
+    # Convertir le graphe NetworkX en graphe pynauty
+    nauty_graph = pynauty.graph.Graph(    
+        number_of_vertices=G.number_of_nodes(),
+        adjacency_dict={node: list(neighbors) for node, neighbors in G.adjacency()}
+    )
+
+    tab=[]
+    a= pynauty.canon_graph(nauty_graph).adjacency_dict
+    for i in a.keys():
+        for j in a[i]:
+            if (j,i) not in tab:
+                tab.append((i,j))
+    G=new_G(tab, G.number_of_nodes())
+    return G
