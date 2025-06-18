@@ -2,7 +2,7 @@ import numpy as np
 import networkx as nx
 import math
 import copy
-import pynauty.src.pynauty as pynauty
+from pynauty import graph , canon_graph
 import json
 
 
@@ -142,14 +142,13 @@ def new_G(listeArc, n):
     return G
 
 def graphe_canonique(G):
-    # Convertir le graphe NetworkX en graphe pynauty
-    nauty_graph = pynauty.graph.Graph(    
+    nauty_graph = graph.Graph(    
         number_of_vertices=G.number_of_nodes(),
         adjacency_dict={node: list(neighbors) for node, neighbors in G.adjacency()}
     )
 
     tab=[]
-    a= pynauty.canon_graph(nauty_graph).adjacency_dict
+    a= canon_graph(nauty_graph).adjacency_dict
     for i in a.keys():
         for j in a[i]:
             if (j,i) not in tab:
