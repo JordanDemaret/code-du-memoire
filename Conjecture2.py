@@ -8,6 +8,7 @@ import pickle
 import time
 import matplotlib.pyplot as plt
 
+#TODO:
 from fonction import *  
 import os
 
