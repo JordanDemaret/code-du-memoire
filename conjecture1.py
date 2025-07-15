@@ -15,7 +15,7 @@ import matplotlib.pyplot as plt
 from fonction import *
 import os
 
-N = 20  
+N = 11
 DECISIONS = int(N*(N-1)/2)  
 
 LEARNING_RATE = 0.0001
@@ -291,7 +291,7 @@ if __name__ == "__main__":
             count = 0
             for i in range(N):
                 for j in range(i+1,N):
-                    if super_actions[0][count] == 0:
+                    if super_actions[0][count] == 1:
                         G.add_edge(i,j)
                     count += 1
             listGraph.append(G)
