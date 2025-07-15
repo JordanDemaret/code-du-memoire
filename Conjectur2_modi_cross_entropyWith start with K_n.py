@@ -45,6 +45,7 @@ state_dim = (observation_space,)
 
 INF = 1000000
 
+myRand = random.randint(0,1000) #used in the filename
 
 #TODO modi
 model = Sequential()
@@ -61,38 +62,38 @@ colorationOfGraphRef = colorationNonEquival(GraphRef, N)
 
 found = False
 def calc_score(state):
-	"""
-	Reward function for your problem.
+    """
+    Reward function for your problem.
 
     Input: a 0-1 vector of length DECISIONS. It represents the graph (or other object) you have created.
 
     Output: the reward/score for your construction. See files in the *demos* folder for examples.	
-	"""
-     #TODO
-	G= nx.Graph()
-	global found
-	G.add_nodes_from(list(range(N)))
-	Gdeg = np.zeros(N,dtype=np.int16) #degree sequence
-	count = 0
-	for i in range(N):
-		for j in range(i+1,N):
-			if state[count] == 1:	
-				G.add_edge(i,j)
-				Gdeg[i] += 1
-				Gdeg[j] += 1
-			count += 1
-			
-	ColG = colorationNonEquival(G,N)
-	myScore = colorationOfGraphRef - ColG
-			
-	if myScore > 0.1 and not (found) :
-		found = True
-		print(myScore)
-		print(state)
-		nx.draw_kamada_kawai(G)
-		plt.show()
-		exit()
-	return myScore
+    """
+    #TODO
+    G = nx.Graph()
+    global found
+    G.add_nodes_from(list(range(N)))
+    Gdeg = np.zeros(N, dtype=np.int16) #degree sequence
+    count = 0
+    for i in range(N):
+        for j in range(i+1, N):
+            if state[count] == 1:	
+                G.add_edge(i, j)
+                Gdeg[i] += 1
+                Gdeg[j] += 1
+            count += 1
+
+    ColG = colorationNonEquival(G, N)
+    myScore = colorationOfGraphRef - ColG
+
+    if myScore > 0.1 and not (found):
+        found = True
+        print(myScore)
+        print(state)
+        nx.draw_kamada_kawai(G)
+        plt.savefig(str(myRand) + '/graph_contre-exemple_' + str(myRand) + '.png')
+        plt.close()  # Fermer la figure précédente pour éviter les superpositions
+    return myScore
 
 
 def play_game(n_sessions, actions,state_next,states,prob, step, total_score):
@@ -203,12 +204,11 @@ score_time = 0
 listGraph = []
 inter=[]
 listGraphScore = []
-
-myRand = random.randint(0,1000) #used in the filename
+listMeanAllReward = []
 debut = 0 #used to continue the algorithm from a certain point
 if __name__ == "__main__":   
     # VTODO
-    if os.path.exists("2_3_M_value.txt") and os.path.exists("2_3_model.weights.h5"):
+    if os.path.exists("2_3_M_value.txt") and os.path.exists("2_3_model.weights.h5") and os.path.exists("2_3_list_save.npz"):
         # Charger le modèle existant
         model.build(input_shape=(None, observation_space))  # Construire le modèle avec la forme d'entrée
         model.load_weights("2_3_model.weights.h5")  # Charger les poids
@@ -222,6 +222,11 @@ if __name__ == "__main__":
                     debut = int(line.split("=")[1].strip())+1
                 elif line.startswith("myRand ="):
                     myRand = int(line.split("=")[1].strip())  
+        dt= np.load("2_3_list_save.npz")
+        listGraph = dt['listGraph'].tolist()
+        inter = dt['inter'].tolist()
+        listGraphScore = dt['listGraphScore'].tolist()
+        listMeanAllReward = dt['listMeanAllReward'].tolist()
     #TODO
     if not os.path.exists(str(myRand)):
         os.makedirs(str(myRand))   
@@ -306,6 +311,24 @@ if __name__ == "__main__":
                     f.write("\n")
             with open(str(myRand)+'/best_100_rewards_'+str(myRand)+'.txt', 'a') as f:
                 f.write(str(mean_all_reward)+"\n")
+                #TODO
+                listMeanAllReward.append(mean_all_reward)
+                
+                # Générer les itérations correspondantes
+                iterations = list(range(1, len(listMeanAllReward) * 20, 20))  # Générer [1, 21, 41, ...]
+
+                plt.plot(iterations, listMeanAllReward)  # Utiliser les itérations comme axe des x
+                plt.plot([1, iterations[-1]], [0.1, 0.1], color='r', linestyle='--')  # Ligne horizontale à y=0.1
+
+                # Configurer les ticks de l'axe des x pour qu'ils fassent des sauts de 20
+                x_ticks = list(range(1, iterations[-1] + 1,200))  # Générer des ticks de 20 en 20
+                plt.xticks(x_ticks)
+
+                plt.xlabel("Kéme itération")  # Ajouter un label pour l'axe des x
+                plt.ylabel("Scores")  # Ajouter un label pour l'axe des y
+                plt.title("Évolution des scores des 100 meilleurs individus par itération")  # Ajouter un titre
+                plt.savefig(str(myRand)+'/Evolution_score_trouver'+str(myRand)+'.png')
+                plt.close()  # Fermer la figure après l'enregistrement pour éviter d'afficher les graphes à chaque itération
             with open(str(myRand)+'/best_elite_rewards_'+str(myRand)+'.txt', 'a') as f:
                 f.write(str(mean_best_reward)+"\n")
             #TODO
@@ -390,10 +413,17 @@ if __name__ == "__main__":
         model.save_weights(f"2_3_model.weights.h5")
         print(f"Les poids du modèle ont été sauvegardés dans 2_3_model.weights.h5")
         # Sauvegarder la valeur de M dans un fichier texte
-        with open(f"2_3_M_value.txt", "w") as f:
+        with open(f"2_3_3M_value.txt", "w") as f:
             f.write(f"M = {M}\n")
             f.write(f"i = {i}\n")
             f.write(f"myRand = {myRand}\n")
         print(f"La valeur de M a été sauvegardée dans 2_3_M_value.txt")
+        np.savez(f"2_3_list_save.npz", 
+                listGraph=listGraph,
+                inter=inter,
+                listGraphScore=listGraphScore,
+                listMeanAllReward=listMeanAllReward)
+
+                    
 
 
