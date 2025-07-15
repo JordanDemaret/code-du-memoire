@@ -177,7 +177,7 @@ if __name__ == "__main__":
     if not os.path.exists(str(myRand)):
         os.makedirs(str(myRand))   
 
-    for i in range(debut,100000): 
+    for i in range(100000): 
         tic = time.time()
         sessions = generate_session(model,n_sessions,0) 
         sessgen_time = time.time()-tic
