@@ -65,6 +65,14 @@ def AGindex(G,Gdeg):
     return result
 
 def colorationNonEquival(G,n):
+    """
+    Fonction pour calculer la coloration non équivalente d'un graphe.
+    Args:
+        G (networkx.Graph): Le graphe pour lequel la coloration non équivalente doit être calculée.
+        n (int): Le nombre de sommets dans le graphe.
+    Returns:
+        int: Le nombre de colorations non équivalentes du graphe.
+    """
     if G.number_of_edges() == int(n*(n-1)/2):
         return 1
     else:
@@ -76,14 +84,17 @@ def colorationNonEquival(G,n):
             return dico[signiature]
         else:
             for node, degree in G.degree():
-                if degree == n - 1: # Vérifie si le degré du sommet est égal à n-1
+                # Vérifie si le degré du sommet est égal à n-1
+                if degree == n - 1: 
                     G1 = copy.deepcopy(G)
                     G1.remove_node(node)
                     mapping = {n-1: node}
                     G1= nx.relabel_nodes(G1, mapping)
                     return colorationNonEquival(G1, n - 1)
-            degres = dict(G.degree()) # Obtenir les degrés des sommets
-            sommets_tries = sorted(degres.items(), key=lambda x: x[1], reverse=True) # Trier par degré décroissant
+            # Obtenir les degrés des sommets
+            degres = dict(G.degree()) 
+            # Trier par degré décroissant
+            sommets_tries = sorted(degres.items(), key=lambda x: x[1], reverse=True) 
             iChosen = sommets_tries[0][0]
             jChosen = sommets_tries[1][0]
             for j in sommets_tries[1:]:
@@ -103,6 +114,14 @@ def colorationNonEquival(G,n):
             return colorationNonEquival(G1,n) + colorationNonEquival(G2,n-1)
 
 def G_star(n, m):
+    """
+        Fonction pour créer un graphe G* avec n sommets et m arêtes.
+    Args:
+        n (int): Le nombre de sommets dans le graphe.
+        m (int): Le nombre d'arêtes dans le graphe.
+    Returns:
+        G (networkx.Graph): Le graphe G* construit avec n sommets et m arêtes.
+    """
     k_m=0
     while (k_m * (k_m - 1)) // 2 <= m:
         k_m += 1
@@ -136,12 +155,27 @@ def G_star(n, m):
     return G
 	
 def new_G(listeArc, n):
+    """
+    Fonction pour créer un nouveau graphe à partir d'une liste d'arêtes et d'un nombre de sommets.
+    Args:
+        listeArc (list): Liste d'arêtes du graphe.
+        n (int): Nombre de sommets dans le graphe.
+    Returns:
+        G (networkx.Graph): Le nouveau graphe construit à partir de la liste d'arêtes.
+    """
     G = nx.Graph()
     G.add_nodes_from(list(range(n)))
     G.add_edges_from(listeArc)
     return G
 
 def graphe_canonique(G):
+    """    
+        Fonction pour obtenir le graphe canonique d'un graphe donné.
+    Args:
+        G (networkx.Graph): Le graphe pour lequel le graphe canonique doit être calculé.        
+    Returns:
+        G (networkx.Graph): Le graphe canonique du graphe d'entrée.
+    """
     nauty_graph = graph.Graph(    
         number_of_vertices=G.number_of_nodes(),
         adjacency_dict={node: list(neighbors) for node, neighbors in G.adjacency()}

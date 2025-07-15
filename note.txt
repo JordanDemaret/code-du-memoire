@@ -1,0 +1,38 @@
+plus de Doc 
+
+pheaf max AG regderles ont (complite splite)
+
+28 jullet contere rendut 
+4 aout  rdv
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#TODO TOUTLA FIN 
+super_actions = np.array(super_actions)
+# Redimensionnez super_actions pour qu'il ait le même nombre de dimensions que actions_batch
+if super_actions.ndim == 1:
+	super_actions = super_actions.reshape(-1, actions_batch.shape[1])
+actions_batch = np.append(actions_batch, np.array(super_actions), axis=0)

@@ -13,18 +13,15 @@ import time
 import math
 import matplotlib.pyplot as plt
 
-#TODO
+# Import des fonctions nécessaires créées dans le cardre de ce memoire
 from fonction import *  
-import copy
-import json
-import pynauty
 import os
 
 
 N = 13
-
 DECISIONS = int(N*(N-1)/2)  
-#TODO
+
+# Variables globales qui permet de contrôler la densité des graphes
 M=DECISIONS - 10
 
 LEARNING_RATE = 0.0001 
@@ -36,7 +33,7 @@ FIRST_LAYER_NEURONS = 128
 SECOND_LAYER_NEURONS = 64
 THIRD_LAYER_NEURONS = 4
 
-n_actions = DECISIONS - M #number of actions to take in each session
+n_actions = DECISIONS - M 
 
 observation_space = DECISIONS
 	  
@@ -45,9 +42,10 @@ state_dim = (observation_space,)
 
 INF = 1000000
 
-myRand = random.randint(0,1000) #used in the filename
+# Nous avons changé l'endroit de cette variable pour l'utiliser dans la fonction calc_score 
+myRand = random.randint(0,1000) 
 
-#TODO modi
+# Modèle modifié pour utiliser la cross-entropy non binaire
 model = Sequential()
 model.add(Dense(FIRST_LAYER_NEURONS,  activation="relu", input_shape=(observation_space,)))
 model.add(Dense(SECOND_LAYER_NEURONS, activation="relu"))
@@ -57,79 +55,65 @@ model.compile(loss="crossentropy", optimizer=SGD(learning_rate = LEARNING_RATE))
 
 print(model.summary())
 
+# Création du graphe de référence et calcul du numCol
 GraphRef = G_star(N, M)
 colorationOfGraphRef = colorationNonEquival(GraphRef, N)
 
 found = False
 def calc_score(state):
     """
-    Reward function for your problem.
-
-    Input: a 0-1 vector of length DECISIONS. It represents the graph (or other object) you have created.
-
-    Output: the reward/score for your construction. See files in the *demos* folder for examples.	
+    Fonction qui calcule le score d'un graphe donné par l'état
     """
-    #TODO
-    G = nx.Graph()
     global found
-    G.add_nodes_from(list(range(N)))
-    Gdeg = np.zeros(N, dtype=np.int16) #degree sequence
-    count = 0
-    for i in range(N):
-        for j in range(i+1, N):
-            if state[count] == 1:	
-                G.add_edge(i, j)
-                Gdeg[i] += 1
-                Gdeg[j] += 1
-            count += 1
+    G , _ = construction_graphe(state, N)  # Construction du graphe à partir de l'état
+    ColG = colorationNonEquival(G, N) # Calcul de la coloration du graphe G
+    myScore = colorationOfGraphRef - ColG # Calcul du score par rapport à la coloration du graphe de référence
 
-    ColG = colorationNonEquival(G, N)
-    myScore = colorationOfGraphRef - ColG
-
+    # Permet de vérifier si un contre-exemple a été trouvé
     if myScore > 0.1 and not (found):
         found = True
         print(myScore)
         print(state)
         nx.draw_kamada_kawai(G)
-        plt.savefig(str(myRand) + '/graph_contre-exemple_' + str(myRand) + '.png')
-        plt.close()  # Fermer la figure précédente pour éviter les superpositions
+        plt.savefig(str(myRand) + '/graph_contre-exemple_' + str(myRand) + '.png') # Sauvegarde du graphe contre-exemple
+        plt.close()  
     return myScore
 
 
 def play_game(n_sessions, actions,state_next,states,prob, step, total_score):
-	#TODO
     for i in range(n_sessions):
+        # Création d'un tableau d'actions pour chaque session
         indices = np.arange(DECISIONS)
+        # Sélection aléatoire d'indices avec des probabilités données par le modèle
         selected_indices = np.random.choice(indices, size=step, replace=False, p=prob[i]/np.sum(prob[i])) #Choose M indices with probabilities given by the neural network
-
+        # Vérifie si l'indice sélectionné est déjà utilisé ou non
         j=0
-        elem=selected_indices[j]
+        pos=selected_indices[j]
         state_next[i] = states[i,:,step-1]
-        while state_next[i][elem]==0:
+        while state_next[i][pos]==0:
             j += 1
-            elem=selected_indices[j]
-            
-        pos=elem #Choose the first index no 
-        
+            pos=selected_indices[j]
+        # Garde une trace de l'action effectuée
         actions[i][pos] = 1
         state_next[i][pos] = 0
-        #calculate final score
-
+        # Vérifie si le jeu est terminé
         terminal = step == DECISIONS-M
         if terminal:
+            # Calcule le score final pour l'état actuel
             total_score[i] = calc_score(state_next[i])
-                # record sessions 
         if not terminal:
+            # Met à jour l'état suivant en fonction de l'action effectuée
             states[i,:,step] = state_next[i]
-    
-    
     return actions, state_next,states, total_score, terminal
-
-#jitted_play_game = njit()(play_game)						
+						
 def generate_session(agent, n_sessions, verbose = 1):	
+    # Permet que les graphes initialisés soient des graphes complets
 	states =  np.ones([n_sessions, observation_space, len_game], dtype=int)
+     
 	actions = np.zeros([n_sessions, len_game], dtype = int)
+    #  Permet que les graphes initialisés soient des graphes complets
 	state_next = np.ones([n_sessions,observation_space], dtype = int)
+     
 	prob = np.zeros(n_sessions)
 	step = 0
 	total_score = np.zeros([n_sessions])
@@ -151,7 +135,6 @@ def generate_session(agent, n_sessions, verbose = 1):
 		print("Predict: "+str(pred_time)+", play: " + str(play_time))
 	return states, actions, total_score
 	
-#ici
 def select_elites(states_batch, actions_batch, rewards_batch, percentile=50):
 	counter = n_sessions * (100.0 - percentile) / 100.0
 	reward_threshold = np.percentile(rewards_batch,percentile)
@@ -200,19 +183,18 @@ sessgen_time = 0
 fit_time = 0
 score_time = 0
 
-#TODO
+# Création de 4 listes permettant de stocker les graphes et les scores
 listGraph = []
 inter=[]
 listGraphScore = []
 listMeanAllReward = []
-debut = 0 #used to continue the algorithm from a certain point
+# Variable servant à continuer l'algorithme à partir d'un certain point
+debut = 0 
 if __name__ == "__main__":   
-    # VTODO
+    # Permet de reprendre l'algorithme à partir d'un certain point
     if os.path.exists("2_3_M_value.txt") and os.path.exists("2_3_model.weights.h5") and os.path.exists("2_3_list_save.npz"):
-        # Charger le modèle existant
-        model.build(input_shape=(None, observation_space))  # Construire le modèle avec la forme d'entrée
-        model.load_weights("2_3_model.weights.h5")  # Charger les poids
-        # Charger la valeur de M et d'autres paramètres à partir du fichier texte
+        model.build(input_shape=(None, observation_space)) 
+        model.load_weights("2_3_model.weights.h5")  
         with open("2_3_M_value.txt", "r") as f:
             lines = f.readlines()
             for line in lines:
@@ -227,25 +209,22 @@ if __name__ == "__main__":
         inter = dt['inter'].tolist()
         listGraphScore = dt['listGraphScore'].tolist()
         listMeanAllReward = dt['listMeanAllReward'].tolist()
-    #TODO
+    # Verification de l'existence du dossier pour sauvegarder les résultats
     if not os.path.exists(str(myRand)):
         os.makedirs(str(myRand))   
-    #TODO
-    nx.draw_kamada_kawai(GraphRef)
+    # Pemet de sauvegarder le graphe de référence
+    nx.draw_kamada_kawai(GraphRef) 
     plt.savefig(str(myRand)+'/graph_ref_'+str(myRand)+'.png')
-    plt.close()  # Fermer la figure précédente pour éviter les superpositions
-
-    # TODO
+    plt.close()  
+    # Permet de sauvegarder le complément du graphe de référence
     GraphRef_complement = nx.complement(GraphRef)
     nx.draw_kamada_kawai(GraphRef_complement)
     plt.savefig(str(myRand)+'/graph_ref_complement_'+str(myRand)+'.png')
     plt.close()
 
-       
-
     for i in range(debut,100000): 
         tic = time.time()
-        sessions = generate_session(model,n_sessions,0) #change 0 to 1 to print out how much time each step in generate_session takes
+        sessions = generate_session(model,n_sessions,0) 
         sessgen_time = time.time()-tic
         tic = time.time()
        
@@ -264,11 +243,11 @@ if __name__ == "__main__":
         tic = time.time()
 
        
-        elite_states, elite_actions = select_elites(states_batch, actions_batch, rewards_batch, percentile=percentile) #pick the sessions to learn from
+        elite_states, elite_actions = select_elites(states_batch, actions_batch, rewards_batch, percentile=percentile) 
         select1_time = time.time()-tic
 
         tic = time.time()
-        super_sessions = select_super_sessions(states_batch, actions_batch, rewards_batch, percentile=super_percentile) #pick the sessions to survive
+        super_sessions = select_super_sessions(states_batch, actions_batch, rewards_batch, percentile=super_percentile) 
         select2_time = time.time()-tic
        
         tic = time.time()
@@ -278,7 +257,7 @@ if __name__ == "__main__":
         select3_time = time.time()-tic
        
         tic = time.time()
-        model.fit(elite_states, elite_actions) #learn from the elite sessions
+        model.fit(elite_states, elite_actions) 
         fit_time = time.time()-tic
        
         tic = time.time()
@@ -298,7 +277,7 @@ if __name__ == "__main__":
         print(  "Mean reward: " + str(mean_all_reward) + "\nSessgen: " + str(sessgen_time) + ", other: " + str(randomcomp_time) + ", select1: " + str(select1_time) + ", select2: " + str(select2_time) + ", select3: " + str(select3_time) +  ", fit: " + str(fit_time) + ", score: " + str(score_time))
        
        
-        if (i%20 == 1): #Write all important info to files every 20 iterations
+        if (i%20 == 1): 
             with open(str(myRand)+'/best_species_pickle_'+str(myRand)+'.txt', 'wb') as fp:
                 pickle.dump(super_actions, fp)
             with open(str(myRand)+'/best_species_txt_'+str(myRand)+'.txt', 'w') as f:
@@ -311,40 +290,35 @@ if __name__ == "__main__":
                     f.write("\n")
             with open(str(myRand)+'/best_100_rewards_'+str(myRand)+'.txt', 'a') as f:
                 f.write(str(mean_all_reward)+"\n")
-                #TODO
+                # Ajoute le score moyen des 100 meilleurs individus à la liste
                 listMeanAllReward.append(mean_all_reward)
                 
-                # Générer les itérations correspondantes
-                iterations = list(range(1, len(listMeanAllReward) * 20, 20))  # Générer [1, 21, 41, ...]
-
-                plt.plot(iterations, listMeanAllReward)  # Utiliser les itérations comme axe des x
-                plt.plot([1, iterations[-1]], [0.1, 0.1], color='r', linestyle='--')  # Ligne horizontale à y=0.1
-
-                # Configurer les ticks de l'axe des x pour qu'ils fassent des sauts de 20
-                x_ticks = list(range(1, iterations[-1] + 1,200))  # Générer des ticks de 20 en 20
+                # Permet de créer un graphique de l'évolution des scores et de l'enregistrer
+                iterations = list(range(1, len(listMeanAllReward) * 20, 20))  
+                plt.plot(iterations, listMeanAllReward)  
+                plt.plot([1, iterations[-1]], [0.1, 0.1], color='r', linestyle='--')  
+                x_ticks = list(range(1, iterations[-1] + 1,200))  
                 plt.xticks(x_ticks)
-
-                plt.xlabel("Kéme itération")  # Ajouter un label pour l'axe des x
-                plt.ylabel("Scores")  # Ajouter un label pour l'axe des y
-                plt.title("Évolution des scores des 100 meilleurs individus par itération")  # Ajouter un titre
+                plt.xlabel("Kéme itération")  
+                plt.ylabel("Scores") 
+                plt.title("Évolution des scores des 100 meilleurs individus par itération") 
                 plt.savefig(str(myRand)+'/Evolution_score_trouver'+str(myRand)+'.png')
-                plt.close()  # Fermer la figure après l'enregistrement pour éviter d'afficher les graphes à chaque itération
+                plt.close()  
             with open(str(myRand)+'/best_elite_rewards_'+str(myRand)+'.txt', 'a') as f:
                 f.write(str(mean_best_reward)+"\n")
-            #TODO
+            # Permet de garder une trace écrite les poids du modèle
             with open(str(myRand)+'/layer_weights_'+str(myRand)+'.txt', 'w') as f:
                 for layer in model.layers:
                     weights, biases = layer.get_weights()
                     f.write(f"Layer: {layer.name}\n")
                     f.write(f"Weights: {weights}\n")
                     f.write(f"Biases: {biases}\n")
-
-        if (i%200==2): # To create a timeline, like in Figure 3
+        if (i%200==2): 
             with open(str(myRand)+'/best_species_timeline_txt_'+str(myRand)+'.txt', 'a') as f:
                 f.write(str(i)+"\n")
                 f.write(str(super_actions[0]))
                 f.write("\n")
-        #TODO TOUTLA FIN 
+            # Permet de garder une trace de l'évolution des graphes au cours du temps
             inter.append(i)
             G= nx.Graph()
             G.add_nodes_from(list(range(N)))
@@ -356,60 +330,36 @@ if __name__ == "__main__":
                     count += 1
             listGraph.append(G)
             listGraphScore.append(super_rewards[0])
-
-
-            # Affichage des graphes
             num_graphs = len(listGraph)
-            cols = 5  # Nombre de colonnes dans la grille
-            rows = math.ceil(num_graphs / cols)  # Calcul du nombre de lignes nécessaires
-
+            cols = 5  
+            rows = math.ceil(num_graphs / cols)  
             fig, axes = plt.subplots(rows, cols, figsize=(min(20, 5 * cols), min(20, 5 * rows)))
-            axes = axes.flatten()  # Aplatir pour un accès facile
-
+            axes = axes.flatten() 
             for i, G in enumerate(listGraph):
                 pos = nx.circular_layout(G)
-                #pos = nx.shell_layout(G)
-           
-                # Identifier les nœuds isolés
-           
-                # Dessiner le graphe
                 nx.draw(G, pos, ax=axes[i], with_labels=True, node_color='lightblue', edge_color='gray')
-                axes[i].set_title(f"Itération n° {inter[i]} (Score: {listGraphScore[i]:.2f})")  # Titre pour chaque sous-graphe
-               
-               
-                # Ajouter une grille manuellement
-                axes[i].set_xticks([])  # Supprimer les ticks x
-                axes[i].set_yticks([])  # Supprimer les ticks y
-                axes[i].grid(visible=True, color='gray', linestyle='--', linewidth=0.5)  # Ajouter une grille
+                axes[i].set_title(f"Itération n° {inter[i]} (Score: {listGraphScore[i]:.2f})")  
+                axes[i].set_xticks([])  
+                axes[i].set_yticks([]) 
+                axes[i].grid(visible=True, color='gray', linestyle='--', linewidth=0.5)  
             plt.savefig(str(myRand)+'/graphes_'+str(myRand)+'.png')
-            plt.close(fig)  # Fermer la figure après l'enregistrement pour éviter d'afficher les graphes à chaque itération
-        
+            plt.close(fig)  
+            
+            # Permet de sauvegarder les graphes complémentaires
             fig, axes = plt.subplots(rows, cols, figsize=(min(20, 5 * cols), min(20, 5 * rows)))
-            axes = axes.flatten()  # Aplatir pour un accès facile
-
+            axes = axes.flatten() 
             for i, G in enumerate(listGraph):
                 G_complement = nx.complement(G)
                 pos = nx.circular_layout(G_complement)
-                # Dessiner le graphe courant 
                 nx.draw(G_complement, pos, ax=axes[i], with_labels=True, node_color='lightblue', edge_color='gray')
                 axes[i].set_title(f"Itération n° {inter[i]} (Score: {listGraphScore[i]:.2f})")
                 axes[i].set_xticks([])
                 axes[i].set_yticks([])
                 axes[i].grid(visible=True, color='gray', linestyle='--', linewidth=0.5)
-
             plt.savefig(f"{myRand}/graphe_complement_{myRand}.png")
             plt.close(fig)
 
-        super_actions = np.array(super_actions)
-        # Redimensionnez super_actions pour qu'il ait le même nombre de dimensions que actions_batch
-        if super_actions.ndim == 1:
-            super_actions = super_actions.reshape(-1, actions_batch.shape[1])
-
-        # Concaténez les tableaux
-        actions_batch = np.append(actions_batch, np.array(super_actions), axis=0)
-
         # Sauvegarder les poids du modèle à la fin
-      
         model.save_weights(f"2_3_model.weights.h5")
         print(f"Les poids du modèle ont été sauvegardés dans 2_3_model.weights.h5")
         # Sauvegarder la valeur de M dans un fichier texte
@@ -418,11 +368,13 @@ if __name__ == "__main__":
             f.write(f"i = {i}\n")
             f.write(f"myRand = {myRand}\n")
         print(f"La valeur de M a été sauvegardée dans 2_3_M_value.txt")
+        # Sauvegarder les liste contennant les graphes et les scores dans un fichier .npz
         np.savez(f"2_3_list_save.npz", 
                 listGraph=listGraph,
                 inter=inter,
                 listGraphScore=listGraphScore,
                 listMeanAllReward=listMeanAllReward)
+        print(f"Les listes ont été sauvegardées dans 2_3_list_save.npz")
 
                     
 

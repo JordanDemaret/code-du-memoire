@@ -15,9 +15,10 @@ import os
 # Import des fonctions nécessaires crées dans le cardre de ce memoire
 from fonction import *
 
-# Liste des paramètres Globales deffinit par Wagner
 N = 7
 DECISIONS = int(N*(N-1)/2) 
+
+# Variables globales qui permet de contrôler la densité des graphes
 M= 6
 
 LEARNING_RATE = 0.0001 
@@ -39,42 +40,45 @@ state_dim = (observation_space,)
 
 INF = 1000000
 
-#model Configuration par Wagner 
+# Nous avons changé l'endroit de cette variable pour l'utiliser dans la fonction calc_score 
+myRand = random.randint(0,1000) 
+
 model = Sequential()
 model.add(Dense(FIRST_LAYER_NEURONS,  activation="relu"))
 model.add(Dense(SECOND_LAYER_NEURONS, activation="relu"))
 model.add(Dense(THIRD_LAYER_NEURONS, activation="relu"))
 model.add(Dense(1, activation="sigmoid"))
 model.build((None, observation_space))
-model.compile(loss="binary_crossentropy", optimizer=SGD(learning_rate = LEARNING_RATE)) #Adam optimizer also works well, with lower learning rate
+model.compile(loss="binary_crossentropy", optimizer=SGD(learning_rate = LEARNING_RATE)) 
 
 print(model.summary())
 
+# Création du graphe de référence et calcul du numCol
 GraphRef = G_star(N, M)
 colorationOfGraphRef = colorationNonEquival(GraphRef, N)
 
 found = False
 def calc_score(state):
-	#TODO
+	"""
+    	Fonction qui calcule le score d'un graphe donné par l'état
+    """
 	global found
-	G,_ = construction_graphe(state,N)
-
+	G,_ = construction_graphe(state,N) # Construction du graphe à partir de l'état
+	# Verifier si le nombre d'arêtes est correct
 	if G.number_of_edges() !=M:
 		return -INF
-	ColG = colorationNonEquival(G,N)
-	myScore = colorationOfGraphRef - ColG
-			
+	
+	ColG = colorationNonEquival(G,N) # Calcul de la coloration du graphe G
+	myScore = colorationOfGraphRef - ColG # Calcul du score par rapport à la coloration du graphe de référence
+
+	# Permet de vérifier si un contre-exemple a été trouvé
 	if myScore > 0.1 and not (found) :
 		found = True
 		print(myScore)
 		print(state)
 		nx.draw_kamada_kawai(G)
 		plt.show()
-		
 	return myScore
-
-
-
 
 def play_game(n_sessions, actions,state_next,states,prob, step, total_score):
 	
@@ -100,9 +104,7 @@ def play_game(n_sessions, actions,state_next,states,prob, step, total_score):
 			states[i,:,step] = state_next[i]
 		
 	return actions, state_next,states, total_score, terminal	
-
-			
-
+		
 def generate_session(agent, n_sessions, verbose = 1):	
 
 	states =  np.zeros([n_sessions, observation_space, len_game], dtype=int)
@@ -180,172 +182,160 @@ sessgen_time = 0
 fit_time = 0
 score_time = 0
 
-#TODO:
+# Création de 4 listes permettant de stocker les graphes et les scores
 listGraph = []
 inter=[]
 listGraphScore = []
+listMeanAllReward = []
+# Variable servant à continuer l'algorithme à partir d'un certain point
+debut = 0 
+if __name__ == "__main__":   
+    # Verification de l'existence du dossier pour sauvegarder les résultats
+    if not os.path.exists(str(myRand)):
+        os.makedirs(str(myRand))   
+    # Pemet de sauvegarder le graphe de référence
+    nx.draw_kamada_kawai(GraphRef) 
+    plt.savefig(str(myRand)+'/graph_ref_'+str(myRand)+'.png')
+    plt.close()  
+    # Permet de sauvegarder le complément du graphe de référence
+    GraphRef_complement = nx.complement(GraphRef)
+    nx.draw_kamada_kawai(GraphRef_complement)
+    plt.savefig(str(myRand)+'/graph_ref_complement_'+str(myRand)+'.png')
+    plt.close()
 
-myRand = random.randint(0,1000) #used in the filename
-if __name__ == "__main__":
-	#TODO
-	if not os.path.exists(str(myRand)):
-		os.makedirs(str(myRand))   
-	# TODO
-	nx.draw_kamada_kawai(GraphRef)
-	plt.savefig(str(myRand)+'/graph_ref_'+str(myRand)+'.png')
-	plt.close()  # Fermer la figure précédente pour éviter les superpositions
-	#TODO: 
-	# Afficher et sauvegarder le complémentaire de GraphRef
-	GraphRef_complement = nx.complement(GraphRef)
-	nx.draw_kamada_kawai(GraphRef_complement)
-	plt.savefig(str(myRand)+'/graph_ref_complement_'+str(myRand)+'.png')
-	plt.close()
+    for i in range(debut,100000): 
+        tic = time.time()
+        sessions = generate_session(model,n_sessions,0) 
+        sessgen_time = time.time()-tic
+        tic = time.time()
+       
+        states_batch = np.array(sessions[0], dtype = int)
+        actions_batch = np.array(sessions[1], dtype = int)
+        rewards_batch = np.array(sessions[2])
+        states_batch = np.transpose(states_batch,axes=[0,2,1])
+       
+        states_batch = np.append(states_batch,super_states,axis=0)
 
+        if i > 0 and len(super_actions) > 0:
+            actions_batch = np.append(actions_batch,np.array(super_actions),axis=0)
+        rewards_batch = np.append(rewards_batch,super_rewards)
+           
+        randomcomp_time = time.time()-tic
+        tic = time.time()
 
-	for i in range(1000000): #1000000 generations should be plenty
-		#generate new sessions
-		#performance can be improved with joblib
-		tic = time.time()
-		sessions = generate_session(model,n_sessions,0) #change 0 to 1 to print out how much time each step in generate_session takes 
-		sessgen_time = time.time()-tic
-		tic = time.time()
-		
-		states_batch = np.array(sessions[0], dtype = int)
-		actions_batch = np.array(sessions[1], dtype = int)
-		rewards_batch = np.array(sessions[2])
-		states_batch = np.transpose(states_batch,axes=[0,2,1])
-		
-		states_batch = np.append(states_batch,super_states,axis=0)
+       
+        elite_states, elite_actions = select_elites(states_batch, actions_batch, rewards_batch, percentile=percentile) 
+        select1_time = time.time()-tic
 
-		if i>0:
-			actions_batch = np.append(actions_batch,np.array(super_actions),axis=0)	
-		rewards_batch = np.append(rewards_batch,super_rewards)
-			
-		randomcomp_time = time.time()-tic 
-		tic = time.time()
+        tic = time.time()
+        super_sessions = select_super_sessions(states_batch, actions_batch, rewards_batch, percentile=super_percentile) 
+        select2_time = time.time()-tic
+       
+        tic = time.time()
+       
+        super_sessions = [(super_sessions[0][i], super_sessions[1][i], super_sessions[2][i]) for i in range(len(super_sessions[2]))]
+        super_sessions.sort(key=lambda super_sessions: super_sessions[2],reverse=True)
+        select3_time = time.time()-tic
+       
+        tic = time.time()
+        model.fit(elite_states, elite_actions) 
+        fit_time = time.time()-tic
+       
+        tic = time.time()
+       
+        super_states = [super_sessions[i][0] for i in range(len(super_sessions))]
+        super_actions = [super_sessions[i][1] for i in range(len(super_sessions))]
+        super_rewards = [super_sessions[i][2] for i in range(len(super_sessions))]
+       
+        rewards_batch.sort()
+        mean_all_reward = np.mean(rewards_batch[-100:])
+        mean_best_reward = np.mean(super_rewards)  
 
-		elite_states, elite_actions = select_elites(states_batch, actions_batch, rewards_batch, percentile=percentile) #pick the sessions to learn from
-		select1_time = time.time()-tic
-
-		tic = time.time()
-		super_sessions = select_super_sessions(states_batch, actions_batch, rewards_batch, percentile=super_percentile) #pick the sessions to survive
-		select2_time = time.time()-tic
-		
-		tic = time.time()
-		super_sessions = [(super_sessions[0][i], super_sessions[1][i], super_sessions[2][i]) for i in range(len(super_sessions[2]))]
-		super_sessions.sort(key=lambda super_sessions: super_sessions[2],reverse=True)
-		select3_time = time.time()-tic
-		
-		tic = time.time()
-		model.fit(elite_states, elite_actions) #learn from the elite sessions
-		fit_time = time.time()-tic
-		
-		tic = time.time()
-		
-		super_states = [super_sessions[i][0] for i in range(len(super_sessions))]
-		super_actions = [super_sessions[i][1] for i in range(len(super_sessions))]
-		super_rewards = [super_sessions[i][2] for i in range(len(super_sessions))]
-		
-		rewards_batch.sort()
-		mean_all_reward = np.mean(rewards_batch[-100:])	
-		mean_best_reward = np.mean(super_rewards)	
-
-		score_time = time.time()-tic
-		
-		print("\n" + str(i) +  ". Best individuals: " + str(np.flip(np.sort(super_rewards))))
-		
-		#uncomment below line to print out how much time each step in this loop takes. 
-		print(	"Mean reward: " + str(mean_all_reward) + "\nSessgen: " + str(sessgen_time) + ", other: " + str(randomcomp_time) + ", select1: " + str(select1_time) + ", select2: " + str(select2_time) + ", select3: " + str(select3_time) +  ", fit: " + str(fit_time) + ", score: " + str(score_time)) 
-		
-		
-		if (i%20 == 1): #Write all important info to files every 20 iterations
-			with open(str(myRand)+'/best_species_pickle_'+str(myRand)+'.txt', 'wb') as fp:
-				pickle.dump(super_actions, fp)
-			with open(str(myRand)+'/best_species_txt_'+str(myRand)+'.txt', 'w') as f:
-				for item in super_actions:
-					f.write(str(item))
-					f.write("\n")
-			with open(str(myRand)+'/best_species_rewards_'+str(myRand)+'.txt', 'w') as f:
-				for item in super_rewards:
-					f.write(str(item))
-					f.write("\n")
-			with open(str(myRand)+'/best_100_rewards_'+str(myRand)+'.txt', 'a') as f:
-				f.write(str(mean_all_reward)+"\n")
-			with open(str(myRand)+'/best_elite_rewards_'+str(myRand)+'.txt', 'a') as f:
-				f.write(str(mean_best_reward)+"\n")
-			#TODO: save the model weights
-			with open(str(myRand)+'/layer_weights_'+str(myRand)+'.txt', 'w') as f:
-				for layer in model.layers:
-					weights, biases = layer.get_weights()
-					f.write(f"Layer: {layer.name}\n")
-					f.write(f"Weights: {weights}\n")
-					f.write(f"Biases: {biases}\n")
-		if (i%200==2): # To create a timeline, like in Figure 3
-			with open(str(myRand)+'/best_species_timeline_txt_'+str(myRand)+'.txt', 'a') as f:
-				f.write(str(super_actions[0]))
-				f.write("\n")
-			#TODO: 
-			inter.append(i)
-			G, _ = construction_graphe(super_actions[0], N)
-			listGraph.append(G)
-			listGraphScore.append(super_rewards[0])
-			
-			# Affichage des graphes
-			num_graphs = len(listGraph)
-			cols = 5  # Nombre de colonnes dans la grille
-			rows = math.ceil(num_graphs / cols)  # Calcul du nombre de lignes nécessaires
-
-			fig, axes = plt.subplots(rows, cols, figsize=(min(20, 5 * cols), min(20, 5 * rows)))
-			axes = axes.flatten()  # Aplatir pour un accès facile
-
-			for i, G in enumerate(listGraph):
-				pos = nx.circular_layout(G)
-				#pos = nx.shell_layout(G)
-		   
-				# Identifier les nœuds isolés
-		   
-				# Dessiner le graphe
-				nx.draw(G, pos, ax=axes[i], with_labels=True, node_color='lightblue', edge_color='gray')
-				axes[i].set_title(f"Itération n° {inter[i]} (Score: {listGraphScore[i]:.2f})")  # Titre pour chaque sous-graphe
-			   
-			   
-				# Ajouter une grille manuellement
-				axes[i].set_xticks([])  # Supprimer les ticks x
-				axes[i].set_yticks([])  # Supprimer les ticks y
-				axes[i].grid(visible=True, color='gray', linestyle='--', linewidth=0.5)  # Ajouter une grille
-		
-			plt.savefig(f"{myRand}/graphe_{myRand}.png")
-			plt.close(fig)  # Fermer la figure après l'enregistrement pour éviter d'afficher les graphes à chaque itération
-
-			fig, axes = plt.subplots(rows, cols, figsize=(min(20, 5 * cols), min(20, 5 * rows)))
-			axes = axes.flatten()  # Aplatir pour un accès facile
-	
-			for i, G in enumerate(listGraph):
-				pos = nx.circular_layout(G)
-				# Dessiner le graphe courant
-				G_complement = nx.complement(G)
-				nx.draw(G_complement, pos, ax=axes[i], with_labels=True, node_color='lightblue', edge_color='gray')
-				axes[i].set_title(f"Itération n° {inter[i]} (Score: {listGraphScore[i]:.2f})")
-				axes[i].set_xticks([])
-				axes[i].set_yticks([])
-				axes[i].grid(visible=True, color='gray', linestyle='--', linewidth=0.5)
-			plt.savefig(f"{myRand}/graphe_complement_{myRand}.png")
-			plt.close(fig)
-
-
-	#TODO TOUT LE RESTE DU CODE
-		print(super_actions[0])
-
-		super_actions = np.array(super_actions)
-		# Vérifiez la forme de actions_batch
-		print("Shape of actions_batch:", actions_batch.shape)
-
-		# Redimensionnez super_actions pour qu'il ait le même nombre de dimensions que actions_batch
-		if super_actions.ndim == 1:
-			super_actions = super_actions.reshape(-1, actions_batch.shape[1])
-
-		# Vérifiez la forme de super_actions après redimensionnement
-		print("Shape of super_actions:", super_actions.shape)
-
-		# Concaténez les tableaux
-		actions_batch = np.append(actions_batch, np.array(super_actions), axis=0)
+        score_time = time.time()-tic
+       
+        print("\n" + str(i) +  ". Best individuals: " + str(np.flip(np.sort(super_rewards))))
+       
+        print(  "Mean reward: " + str(mean_all_reward) + "\nSessgen: " + str(sessgen_time) + ", other: " + str(randomcomp_time) + ", select1: " + str(select1_time) + ", select2: " + str(select2_time) + ", select3: " + str(select3_time) +  ", fit: " + str(fit_time) + ", score: " + str(score_time))
+       
+       
+        if (i%20 == 1): 
+            with open(str(myRand)+'/best_species_pickle_'+str(myRand)+'.txt', 'wb') as fp:
+                pickle.dump(super_actions, fp)
+            with open(str(myRand)+'/best_species_txt_'+str(myRand)+'.txt', 'w') as f:
+                for item in super_actions:
+                    f.write(str(item))
+                    f.write("\n")
+            with open(str(myRand)+'/best_species_rewards_'+str(myRand)+'.txt', 'w') as f:
+                for item in super_rewards:
+                    f.write(str(item))
+                    f.write("\n")
+            with open(str(myRand)+'/best_100_rewards_'+str(myRand)+'.txt', 'a') as f:
+                f.write(str(mean_all_reward)+"\n")
+                # Ajoute le score moyen des 100 meilleurs individus à la liste
+                listMeanAllReward.append(mean_all_reward)
+                
+                # Permet de créer un graphique de l'évolution des scores et de l'enregistrer
+                iterations = list(range(1, len(listMeanAllReward) * 20, 20))  
+                plt.plot(iterations, listMeanAllReward)  
+                plt.plot([1, iterations[-1]], [0.1, 0.1], color='r', linestyle='--')  
+                x_ticks = list(range(1, iterations[-1] + 1,200))  
+                plt.xticks(x_ticks)
+                plt.xlabel("Kéme itération")  
+                plt.ylabel("Scores") 
+                plt.title("Évolution des scores des 100 meilleurs individus par itération") 
+                plt.savefig(str(myRand)+'/Evolution_score_trouver'+str(myRand)+'.png')
+                plt.close()  
+            with open(str(myRand)+'/best_elite_rewards_'+str(myRand)+'.txt', 'a') as f:
+                f.write(str(mean_best_reward)+"\n")
+            # Permet de garder une trace écrite les poids du modèle
+            with open(str(myRand)+'/layer_weights_'+str(myRand)+'.txt', 'w') as f:
+                for layer in model.layers:
+                    weights, biases = layer.get_weights()
+                    f.write(f"Layer: {layer.name}\n")
+                    f.write(f"Weights: {weights}\n")
+                    f.write(f"Biases: {biases}\n")
+        if (i%200==2): 
+            with open(str(myRand)+'/best_species_timeline_txt_'+str(myRand)+'.txt', 'a') as f:
+                f.write(str(i)+"\n")
+                f.write(str(super_actions[0]))
+                f.write("\n")
+            # Permet de garder une trace de l'évolution des graphes au cours du temps
+            inter.append(i)
+            G= nx.Graph()
+            G.add_nodes_from(list(range(N)))
+            count = 0
+            for i in range(N):
+                for j in range(i+1,N):
+                    if super_actions[0][count] == 1:
+                        G.add_edge(i,j)
+                    count += 1
+            listGraph.append(G)
+            listGraphScore.append(super_rewards[0])
+            num_graphs = len(listGraph)
+            cols = 5  
+            rows = math.ceil(num_graphs / cols)  
+            fig, axes = plt.subplots(rows, cols, figsize=(min(20, 5 * cols), min(20, 5 * rows)))
+            axes = axes.flatten() 
+            for i, G in enumerate(listGraph):
+                pos = nx.circular_layout(G)
+                nx.draw(G, pos, ax=axes[i], with_labels=True, node_color='lightblue', edge_color='gray')
+                axes[i].set_title(f"Itération n° {inter[i]} (Score: {listGraphScore[i]:.2f})")  
+                axes[i].set_xticks([])  
+                axes[i].set_yticks([]) 
+                axes[i].grid(visible=True, color='gray', linestyle='--', linewidth=0.5)  
+            plt.savefig(str(myRand)+'/graphes_'+str(myRand)+'.png')
+            plt.close(fig)  
+            
+            # Permet de sauvegarder les graphes complémentaires
+            fig, axes = plt.subplots(rows, cols, figsize=(min(20, 5 * cols), min(20, 5 * rows)))
+            axes = axes.flatten() 
+            for i, G in enumerate(listGraph):
+                G_complement = nx.complement(G)
+                pos = nx.circular_layout(G_complement)
+                nx.draw(G_complement, pos, ax=axes[i], with_labels=True, node_color='lightblue', edge_color='gray')
+                axes[i].set_title(f"Itération n° {inter[i]} (Score: {listGraphScore[i]:.2f})")
+                axes[i].set_xticks([])
+                axes[i].set_yticks([])
+                axes[i].grid(visible=True, color='gray', linestyle='--', linewidth=0.5)
+            plt.savefig(f"{myRand}/graphe_complement_{myRand}.png")
+            plt.close(fig)
