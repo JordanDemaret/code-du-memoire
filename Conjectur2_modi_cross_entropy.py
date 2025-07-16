@@ -293,7 +293,7 @@ if __name__ == "__main__":
                 iterations = list(range(1, len(listMeanAllReward) * 20, 20))  
                 plt.plot(iterations, listMeanAllReward)  
                 plt.plot([1, iterations[-1]], [0.1, 0.1], color='r', linestyle='--')  
-                x_ticks = list(range(1, iterations[-1] + iterations[-1]//10))  
+                x_ticks = list(range(1, iterations[-1] , iterations[-1]//10))  
                 plt.xticks(x_ticks)
                 plt.xlabel("Kéme itération")  
                 plt.ylabel("Scores") 
