@@ -21,7 +21,7 @@ N = 13
 DECISIONS = int(N*(N-1)/2)  
 
 # Variables globales qui permet de contrôler la densité des graphes
-M=DECISIONS//2 -10
+M=DECISIONS//2 -15
 
 LEARNING_RATE = 0.0001 
 n_sessions =1000 
@@ -74,8 +74,8 @@ def calc_score(state):
         print(myScore)
         print(state)
         nx.draw_kamada_kawai(G)
-        plt.show()
-        exit()
+        plt.savefig(str(myRand) + '/graph_contre-exemple_' + str(myRand) + '.png') # Sauvegarde du graphe contre-exemple
+        plt.close()  
     return myScore
 
 
@@ -89,14 +89,14 @@ def play_game(n_sessions, actions,state_next,states,prob, step, total_score):
         j=0
         pos=selected_indices[j]
         state_next[i] = states[i,:,step-1]
-        while state_next[i][pos]==0:
+        while state_next[i][pos]==1:
             j += 1
             pos=selected_indices[j]
         # Garde une trace de l'action effectuée
         actions[i][pos] = 1
         state_next[i][pos] = 1
         # Vérifie si le jeu est terminé
-        terminal = step == DECISIONS-M
+        terminal = step ==M
         if terminal:
             # Calcule le score final pour l'état actuel
             total_score[i] = calc_score(state_next[i])
