@@ -195,16 +195,16 @@ listMeanAllReward = []
 debut = 0 
 if __name__ == "__main__":   
     # Permet de reprendre l'algorithme à partir d'un certain point
-    if os.path.exists("2_3_M_value.txt") and os.path.exists("2_3_model.weights.h5"):
+    if os.path.exists("3_3_M_value.txt") and os.path.exists("3_3_model.weights.h5"):
         model.build(input_shape=(None, observation_space)) 
-        model.load_weights("2_3_model.weights.h5")  
-        with open("2_3_M_value.txt", "r") as f:
+        model.load_weights("3_3_model.weights.h5")  
+        with open("3_3_M_value.txt", "r") as f:
             lines = f.readlines()
             for line in lines:
                 if line.startswith("M ="):
                     if M == int(line.split("=")[1].strip()) :
                         print("Le nombre d'arêtes M ne correspond pas à celui du graphe de référence.")
-                        print("Veuillez supprimer le fichier 2_2_M_value.txt et 2_2_model.weights.h5 pour continuer l'algorithme.")
+                        print("Veuillez supprimer le fichier 3_3_M_value.txt et 3_3_model.weights.h5 pour continuer l'algorithme.")
                         exit( )
                 elif line.startswith("i ="):
                     debut = int(line.split("=")[1].strip())+1
@@ -368,11 +368,11 @@ if __name__ == "__main__":
             plt.close(fig)
 
         # Sauvegarder les poids du modèle à la fin
-        model.save_weights(f"2_3_model.weights.h5")
-        print(f"Les poids du modèle ont été sauvegardés dans 2_3_model.weights.h5")
+        model.save_weights(f"3_3_model.weights.h5")
+        print(f"Les poids du modèle ont été sauvegardés dans 3_3_model.weights.h5")
         # Sauvegarder la valeur de M dans un fichier texte
-        with open(f"2_3_M_value.txt", "w") as f:
+        with open(f"3_3_M_value.txt", "w") as f:
             f.write(f"M = {M}\n")
             f.write(f"i = {i}\n")
             f.write(f"myRand = {myRand}\n")
-        print(f"La valeur de M a été sauvegardée dans 2_3_M_value.txt")
+        print(f"La valeur de M a été sauvegardée dans 3_3_M_value.txt")
