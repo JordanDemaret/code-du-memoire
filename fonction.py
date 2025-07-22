@@ -189,3 +189,35 @@ def graphe_canonique(G):
                 tab.append((i,j))
     G=new_G(tab, G.number_of_nodes())
     return G
+
+def complit_split_graph(n,verticesInClique):
+    Gdeg = [0] * n
+    # Créer un graphe vide
+    G = nx.Graph()
+
+    # Ajouter les sommets de la clique
+    clique_nodes = list(range(verticesInClique))
+    G.add_nodes_from(clique_nodes)
+
+    # Ajouter les arêtes de la clique
+    for i in range(verticesInClique):
+        for j in range(i + 1, verticesInClique):
+            G.add_edge(i, j)
+            Gdeg[i] += 1
+            Gdeg[j] += 1
+
+    # Ajouter les sommets isolés
+    isolated_nodes = list(range(verticesInClique, n))
+    G.add_nodes_from(isolated_nodes)
+
+    # Connecter xhacun sommet isolé au k_m remiers sommets de la clique
+    for i in range(verticesInClique, n):
+        for j in range(verticesInClique):
+            G.add_edge(i, j)
+            Gdeg[i] += 1
+            Gdeg[j] += 1
+    return G, Gdeg
+
+
+
+
