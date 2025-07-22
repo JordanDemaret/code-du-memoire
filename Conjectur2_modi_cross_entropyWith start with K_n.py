@@ -22,7 +22,7 @@ N = 13
 DECISIONS = int(N*(N-1)/2)  
 
 # Variables globales qui permet de contrôler la densité des graphes
-M=DECISIONS - 10
+M=DECISIONS - 15
 
 LEARNING_RATE = 0.0001 
 n_sessions =1000 
@@ -192,7 +192,7 @@ listMeanAllReward = []
 debut = 0 
 if __name__ == "__main__":   
     # Permet de reprendre l'algorithme à partir d'un certain point
-    if os.path.exists("2_3_M_value.txt") and os.path.exists("2_3_model.weights.h5") and os.path.exists("2_3_list_save.npz"):
+    if os.path.exists("2_3_M_value.txt") and os.path.exists("2_3_model.weights.h5"):
         model.build(input_shape=(None, observation_space)) 
         model.load_weights("2_3_model.weights.h5")  
         with open("2_3_M_value.txt", "r") as f:
@@ -204,11 +204,6 @@ if __name__ == "__main__":
                     debut = int(line.split("=")[1].strip())+1
                 elif line.startswith("myRand ="):
                     myRand = int(line.split("=")[1].strip())  
-        dt= np.load("2_3_list_save.npz")
-        listGraph = dt['listGraph'].tolist()
-        inter = dt['inter'].tolist()
-        listGraphScore = dt['listGraphScore'].tolist()
-        listMeanAllReward = dt['listMeanAllReward'].tolist()
     # Verification de l'existence du dossier pour sauvegarder les résultats
     if not os.path.exists(str(myRand)):
         os.makedirs(str(myRand))   
@@ -370,19 +365,8 @@ if __name__ == "__main__":
         model.save_weights(f"2_3_model.weights.h5")
         print(f"Les poids du modèle ont été sauvegardés dans 2_3_model.weights.h5")
         # Sauvegarder la valeur de M dans un fichier texte
-        with open(f"2_3_3M_value.txt", "w") as f:
+        with open(f"2_3_M_value.txt", "w") as f:
             f.write(f"M = {M}\n")
             f.write(f"i = {i}\n")
             f.write(f"myRand = {myRand}\n")
         print(f"La valeur de M a été sauvegardée dans 2_3_M_value.txt")
-        # Sauvegarder les liste contennant les graphes et les scores dans un fichier .npz
-        np.savez(f"2_3_list_save.npz", 
-                listGraph=listGraph,
-                inter=inter,
-                listGraphScore=listGraphScore,
-                listMeanAllReward=listMeanAllReward)
-        print(f"Les listes ont été sauvegardées dans 2_3_list_save.npz")
-
-                    
-
-
