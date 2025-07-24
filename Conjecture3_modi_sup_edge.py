@@ -18,11 +18,11 @@ from fonction import *
 import os
 
 
-N = 13
+N = 17
 DECISIONS = int(N*(N-1)/2)  
 
 # Imposer le nombre de sommet dans la clique
-V_Vertices_In_Clique = 1
+V_Vertices_In_Clique = 10
 # Création du graphe de référence et calcul du numCol
 GraphRef, GDegRef = complit_split_graph(N, V_Vertices_In_Clique)
 AG_Of_GraphRef = AGindex(GraphRef, GDegRef)
@@ -72,7 +72,7 @@ def calc_score(state):
 		return -INF
 	
 	AG = AGindex(G, GDeg) # Calcul de l'AG du graphe
-	myScore = AG_Of_GraphRef - AG # Calcul du score par rapport à l'AG du graphe de référence
+	myScore = AG - AG_Of_GraphRef # Calcul de la différence entre l'AG du graphe et celui du graphe de référence
 
 	# Permet de vérifier si un contre-exemple a été trouvé
 	if myScore > 0.1 and not (found) :

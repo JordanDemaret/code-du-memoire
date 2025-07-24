@@ -68,7 +68,8 @@ def calc_score(state):
 	G,GDeg = construction_graphe(state,N) # Construction du graphe à partir de l'état
 
 	AG = AGindex(G, GDeg) # Calcul de l'AG du graphe
-	myScore = AG_Of_GraphRef - AG # Calcul du score par rapport à l'AG du graphe de référence
+	myScore = AG - AG_Of_GraphRef # Calcul de la différence entre l'AG du graphe et celui du graphe de référence
+
 
 	# Permet de vérifier si un contre-exemple a été trouvé
 	if myScore > 0.1 and not (found) :

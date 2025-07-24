@@ -8,12 +8,11 @@ import pickle
 import time
 import matplotlib.pyplot as plt
 
-#TODO:
+
+# Import des fonctions nécessaires crées dans le cardre de ce memoire
 from fonction import *  
 import os
 
-# Import des fonctions nécessaires crées dans le cardre de ce memoire
-from fonction import *
 
 N = 7
 DECISIONS = int(N*(N-1)/2) 
@@ -72,7 +71,7 @@ def calc_score(state):
 		return -INF
 	
 	AG = AGindex(G, GDeg) # Calcul de l'AG du graphe
-	myScore = AG_Of_GraphRef - AG # Calcul du score par rapport à l'AG du graphe de référence
+	myScore = AG - AG_Of_GraphRef # Calcul de la différence entre l'AG du graphe et celui du graphe de référence
 
 	# Permet de vérifier si un contre-exemple a été trouvé
 	if myScore > 0.1 and not (found) :
