@@ -7,8 +7,7 @@ import numpy as np
 
 listMeanAllReward = []  # Liste pour stocker les moyennes des scores
 
-chemmin="./resultat/conjecture2/Conjectur2_n_7_m_6/best_100_rewards_2.txt"
-
+chemmin="./resultat/conjecture3/conjecture3_n_17_m_115/best_100_rewards_448.txt"
 with open(chemmin, 'r') as file:
     for line in file:
         if line.strip():  # Vérifie si la ligne n'est pas vide
@@ -26,7 +25,7 @@ listMeanAllReward.pop(-1)  # Supprimer le premier élément (0.0) de la liste
 # Permet de créer un graphique de l'évolution des scores et de l'enregistrer
 iterations = list(range(1, len(listMeanAllReward) * 20, 20))  
 plt.plot(iterations, listMeanAllReward)  
-plt.plot([1, iterations[-1]], [0.1, 0.1], color='r', linestyle='--')  
+plt.plot([1, iterations[-1]], [0, 0], color='r', linestyle='--')  
 if len(iterations) <= 10:
     # Si moins de 10 points, afficher tous les points
     x_ticks = iterations
