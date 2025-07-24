@@ -191,7 +191,7 @@ def graphe_canonique(G):
     return G
 
 def complit_split_graph(n,verticesInClique):
-    if verticesInClique < 1 or verticesInClique > n:
+    if verticesInClique < 0 or verticesInClique > n:
         raise ValueError("verticesInClique doit être compris entre 1 et n (inclusif).")
 
     Gdeg = [0] * n
