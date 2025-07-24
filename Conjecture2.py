@@ -277,7 +277,7 @@ if __name__ == "__main__":
                 # Permet de créer un graphique de l'évolution des scores et de l'enregistrer
                 iterations = list(range(1, len(listMeanAllReward) * 20, 20))  
                 plt.plot(iterations, listMeanAllReward)  
-                plt.plot([1, iterations[-1]], [0.1, 0.1], color='r', linestyle='--')  
+                plt.plot([1, iterations[-1]], [0, 0], color='r', linestyle='--')  
                 if len(iterations) <= 10:
                     # Si moins de 10 points, afficher tous les points
                     x_ticks = iterations
