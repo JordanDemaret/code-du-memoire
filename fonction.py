@@ -190,7 +190,7 @@ def graphe_canonique(G):
     G=new_G(tab, G.number_of_nodes())
     return G
 
-def complit_split_graph(n,verticesInClique):
+def complete_split_graph(n,verticesInClique):
     if verticesInClique < 0 or verticesInClique > n:
         raise ValueError("verticesInClique doit être compris entre 1 et n (inclusif).")
 

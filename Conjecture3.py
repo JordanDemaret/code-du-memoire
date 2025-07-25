@@ -20,8 +20,8 @@ DECISIONS = int(N*(N-1)/2)
 # Imposer le nombre de sommet dans la clique
 V_Vertices_In_Clique = 1
 # Création du graphe de référence et calcul du numCol
-GraphRef, GDegREf= complit_split_graph(N, V_Vertices_In_Clique)
-AG_Of_GraphRef = AGindex(GraphRef, GDegREf)
+GraphRef, GDegRef= complete_split_graph(N, V_Vertices_In_Clique)
+AG_Of_GraphRef = AGindex(GraphRef, GDegRef)
 # Variables globales qui permet de contrôler la densité des graphes
 M= GraphRef.number_of_edges()
 
