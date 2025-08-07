@@ -88,8 +88,9 @@ def colorationNonEquival(G,n):
                 if degree == n - 1: 
                     G1 = copy.deepcopy(G)
                     G1.remove_node(node)
-                    mapping = {n-1: node}
-                    G1= nx.relabel_nodes(G1, mapping)
+                    if node != n-1:  
+                        mapping = {n-1: node}
+                        G1= nx.relabel_nodes(G1, mapping)
                     return colorationNonEquival(G1, n - 1)
             # Obtenir les degrés des sommets
             degres = dict(G.degree()) 
