@@ -17,7 +17,7 @@ Pour des raisons de clarté, seules les parties modifiées ou ajoutées seront d
 
 Le répertoire est divisé comme suit :
 
-./
+```
 ├── README.md                    # Ce fichier
 ├── fonction.py                  # Contient plusieurs fonctions comme les calculs d'invariants
 ├── Test.py                      # Tests unitaires pour valider les fonctions
@@ -34,7 +34,7 @@ Le répertoire est divisé comme suit :
     ├── conjecture1/
     ├── conjecture2/
     └── conjecture3/
-
+```
 ## Auteur
 
 **Demaret Jordan**  
