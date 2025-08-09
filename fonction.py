@@ -78,10 +78,10 @@ def colorationNonEquival(G,n):
     else:
         
         G=graphe_canonique(G)
-        signiature = nx.to_graph6_bytes(G).decode()[10:]
-        signiature = signiature[ :len(signiature)-1]
-        if signiature in dico:
-            return dico[signiature]
+        signature = nx.to_graph6_bytes(G).decode()[10:]
+        signature = signature[ :len(signature)-1]
+        if signature in dico:
+            return dico[signature]
         else:
             for node, degree in G.degree():
                 # Vérifie si le degré du sommet est égal à n-1
